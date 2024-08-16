@@ -9,7 +9,7 @@ import (
 
 func main() {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		_, err := fmt.Fprintf(w, "KU-MO says hello @ %s", time.Now().Format(time.RFC822))
+		_, err := fmt.Fprintf(w, "KU-MO says hello @ %s", time.Now().Format(time.RFC1123))
 		if err != nil {
 			fmt.Println(err)
 		}
