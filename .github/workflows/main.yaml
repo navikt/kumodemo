@@ -7,7 +7,7 @@ on:
       - "*.md"
 jobs:
   build:
-    name: Build and deploy
+    name: Build and push
     runs-on: ubuntu-latest
     permissions:
       contents: read
