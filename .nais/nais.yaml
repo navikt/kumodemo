@@ -1,0 +1,20 @@
+apiVersion: nais.io/v1
+kind: Application
+metadata:
+  labels:
+    team: appsec
+  name:  kumodemo
+  namespace: appsec
+spec:
+  image: {{ image }}
+  port: 8080
+  ingresses:
+    - https://kumodemo.ansatt.nav.no
+  ttl: 12h
+  resources:
+    requests:
+      cpu: "50m"
+      memory: 32Mi
+
+
+
