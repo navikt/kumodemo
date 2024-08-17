@@ -1,0 +1,54 @@
+name: Build and deploy main
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - "*.md"
+jobs:
+  build:
+    name: Build and deploy
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      RUNNER_IMG: "chainguard/static"
+      RUNNERIMG_IDENTITY: "https://github.com/chainguard-images/images/.github/workflows/release.yaml@refs/heads/main"
+      RUNNERIMG_ISSUER: "https://token.actions.githubusercontent.com"
+    outputs:
+      tag: "${{ steps.docker-build-push.outputs.IMAGE }}"
+    steps:
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # ratchet:actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Install cosign
+        uses: sigstore/cosign-installer@19351d009d6b451ccfef9ebbb5e31495dd176d24 # ratchet:sigstore/cosign-installer@main
+        with:
+          cosign-release: 'v2.4.0'
+      - name: Verify runner image
+        run: cosign verify --certificate-identity ${{ env.RUNNERIMG_IDENTITY }} --certificate-oidc-issuer ${{ env.RUNNERIMG_ISSUER }} ${{ env.RUNNER_IMG }}
+      - uses: nais/docker-build-push@099f6e6d0b4fa8899d03aae7dd274f87d4ff0651 # ratchet:nais/docker-build-push@v0
+        id: docker-build-push
+        name: Build and push Docker image
+        with:
+          team: appsec
+          pull: true
+          project_id: ${{ vars.NAIS_MANAGEMENT_PROJECT_ID }}
+          identity_provider: ${{ secrets.NAIS_WORKLOAD_IDENTITY_PROVIDER }}
+  deploy_to_prod:
+    name: Deploy to prod-gcp
+    needs: build
+    permissions:
+      contents: read
+      id-token: write
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # ratchet:actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: nais/deploy/actions/deploy@36f87b6d4722fb7f45f19218bf86ad698829ce70 # ratchet:nais/deploy/actions/deploy@v2
+        env:
+          CLUSTER: prod-gcp
+          RESOURCE: .nais/nais.yaml
+          IMAGE: ${{ needs.build.outputs.tag }}
